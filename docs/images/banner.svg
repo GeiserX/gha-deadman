@@ -1,0 +1,28 @@
+<svg width="900" height="200" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="gha-deadman">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c1917"/>
+      <stop offset="55%" stop-color="#3b0d0d"/>
+      <stop offset="100%" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="900" height="200" rx="12" fill="url(#bg)"/>
+  <rect width="900" height="200" rx="12" fill="url(#grid)"/>
+  <!-- EKG pulse flatlining -->
+  <polyline points="40,100 75,100 88,70 102,130 115,100 140,100 152,82 164,118 175,100 260,100"
+            fill="none" stroke="#f87171" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="260" cy="100" r="7" fill="#f87171"/>
+  <text x="500" y="98" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="46" font-weight="700" fill="#fafaf9">gha-deadman</text>
+  <text x="500" y="136" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="19" fill="#d6d3d1">a dead-man's switch on free GitHub Actions</text>
+  <g fill="#f87171">
+    <circle cx="820" cy="60" r="5" fill-opacity="0.9"/>
+    <circle cx="845" cy="85" r="4" fill-opacity="0.6"/>
+    <circle cx="825" cy="115" r="3" fill-opacity="0.4"/>
+    <circle cx="850" cy="140" r="5" fill-opacity="0.7"/>
+  </g>
+</svg>

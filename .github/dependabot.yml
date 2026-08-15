@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "ci"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
