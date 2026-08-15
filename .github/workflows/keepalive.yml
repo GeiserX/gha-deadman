@@ -1,0 +1,26 @@
+name: keepalive
+
+# GitHub auto-disables scheduled workflows after 60 days of repository
+# inactivity. Re-enabling them via the API resets that timer, so this job
+# keeps both the probe and itself alive. Kept out of deadman.yml so its green
+# runs never pollute the probe's run history (which is the probe's state).
+
+on:
+  schedule:
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Reset the scheduled-workflow disable timer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deadman.yml/enable"
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"

@@ -24,16 +24,21 @@ closed, with zero infrastructure and zero cost.
 - `.github/workflows/deadman.yml` runs on a `*/10` cron on GitHub-hosted
   runners (free and unlimited on public repositories).
 - `scripts/check.sh` probes `TARGET_URL` (2 attempts, 25 s apart, so a single
-  network blip doesn't page you), keeps up/down state in a repository Actions
-  variable (`DEADMAN_STATE`), and talks to the Telegram Bot API directly —
+  network blip doesn't page you) and talks to the Telegram Bot API directly —
   no third-party actions, no dependencies beyond `curl`, `jq` and `gh`.
+- **Stateless by design**: the workflow's own run history is the state. A
+  failing probe exits non-zero, so the previous run's conclusion says whether
+  the target was already down, the streak of consecutive red runs drives the
+  re-alert cadence, and the oldest red run's timestamp gives the outage
+  duration. Nothing is stored anywhere, and the run history doubles as an
+  outage log. (This also sidesteps a real limitation: the workflow
+  `GITHUB_TOKEN` cannot write repository Actions variables.)
 - Alert policy: one message on the up→down transition, a reminder every hour
   while down, one message on recovery with the outage duration. Steady state
-  sends nothing and writes nothing.
-- A weekly keepalive job re-enables the workflow via the GitHub API so the
-  schedule survives GitHub's 60-day inactivity auto-disable.
-- While the target is down the probe run exits non-zero, so the workflow badge
-  and run history double as an outage log.
+  sends nothing.
+- A separate weekly `keepalive.yml` re-enables both workflows via the GitHub
+  API so the schedules survive GitHub's 60-day inactivity auto-disable —
+  separate on purpose, so its green runs never pollute the probe's history.
 
 ## Setup
 
@@ -63,8 +68,8 @@ Environment knobs in `scripts/check.sh` (override in the workflow if needed):
 | `PROBE_ATTEMPTS` | `2` | Failed attempts required to call it down |
 | `PROBE_RETRY_DELAY` | `25` | Seconds between attempts |
 | `PROBE_TIMEOUT` | `20` | Per-attempt timeout in seconds |
-| `REALERT_SECONDS` | `3600` | Reminder interval while down |
-| `STATE_VAR` | `DEADMAN_STATE` | Name of the Actions variable holding state |
+| `REALERT_EVERY_RUNS` | `6` | Reminder every N red runs (6 × 10 min cron ≈ hourly) |
+| `WORKFLOW_FILE` | `deadman.yml` | Workflow whose run history is read as state |
 
 Note that GitHub cron is best-effort: expect occasional multi-minute delays,
 which is fine for a dead-man's switch with a 20-minute detection floor.

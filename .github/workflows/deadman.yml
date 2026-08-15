@@ -3,11 +3,10 @@ name: deadman
 on:
   schedule:
     - cron: "*/10 * * * *"
-    - cron: "17 3 * * 0" # weekly keepalive tick
   workflow_dispatch:
 
 permissions:
-  actions: write
+  actions: read
   contents: read
 
 concurrency:
@@ -16,11 +15,10 @@ concurrency:
 
 jobs:
   probe:
-    if: github.event.schedule != '17 3 * * 0'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Probe target
         env:
           TARGET_URL: ${{ secrets.TARGET_URL }}
@@ -29,13 +27,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: ./scripts/check.sh
-
-  keepalive:
-    if: github.event.schedule == '17 3 * * 0'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Reset the 60-day scheduled-workflow disable timer
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/deadman.yml/enable"

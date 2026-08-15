@@ -4,8 +4,14 @@
 
 gha-deadman is a dead-man's switch on free GitHub Actions: a scheduled
 workflow probes `TARGET_URL` from GitHub-hosted runners and alerts via the
-Telegram Bot API on down/recovery. All logic lives in `scripts/check.sh`;
-state lives in the `DEADMAN_STATE` repository Actions variable.
+Telegram Bot API on down/recovery. All logic lives in `scripts/check.sh`.
+State is the workflow's own run history — the previous run's conclusion,
+the streak of consecutive failures, and the oldest failure's timestamp.
+Do NOT reintroduce Actions variables for state: the workflow `GITHUB_TOKEN`
+gets `Resource not accessible by integration` (HTTP 403) on variable writes
+even with `permissions: actions: write` — that is why the stateless design
+exists. Keepalive lives in its own workflow (`keepalive.yml`) on purpose so
+its green runs never pollute the probe's run history.
 
 ## Rules
 
