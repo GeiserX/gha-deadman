@@ -62,13 +62,24 @@ assert_log "recovery" "TELEGRAM.*reachable again.*down ~60 min" 1
 MOCK_PROBE_RC=0 MOCK_HIST="success 2026-08-15T21:50:00Z;success 2026-08-15T21:40:00Z" run_case "steady-up" 0
 assert_log "steady-up" "TELEGRAM" 0
 
-# D: down, streak 1 (total 2, not a multiple of 6) -> silent red, rc=1
-MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T21:50:00Z;success 2026-08-15T21:40:00Z" run_case "down-quiet" 1
+# D: down 20 min, previous run also inside the first hour -> silent red, rc=1
+MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T21:50:00Z;failure 2026-08-15T21:40:00Z;success 2026-08-15T21:30:00Z" run_case "down-quiet" 1
 assert_log "down-quiet" "TELEGRAM" 0
 
-# E: down, streak 5 (total 6) -> hourly re-alert with duration, rc=1
-MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T21:50:00Z;failure 2026-08-15T21:40:00Z;failure 2026-08-15T21:30:00Z;failure 2026-08-15T21:20:00Z;failure 2026-08-15T21:10:00Z;success 2026-08-15T21:00:00Z" run_case "down-realert" 1
-assert_log "down-realert" "TELEGRAM.*still unreachable.*down ~50 min" 1
+# E: down since 20:55 (65 min), previous run at 21:50 was still in bucket 0 ->
+# this run crosses into bucket 1, so exactly one re-alert, rc=1
+MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T21:50:00Z;failure 2026-08-15T21:20:00Z;failure 2026-08-15T20:55:00Z;success 2026-08-15T20:45:00Z" run_case "down-realert" 1
+assert_log "down-realert" "TELEGRAM.*still unreachable.*down ~65 min" 1
+
+# F2: down 95 min but the previous run (21:40) was ALREADY in bucket 1 ->
+# no repeat inside the same hour, rc=1. Guards against reminder spam when the
+# scheduler fires several times in one hour.
+MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T21:40:00Z;failure 2026-08-15T21:00:00Z;failure 2026-08-15T20:25:00Z;success 2026-08-15T20:15:00Z" run_case "down-no-repeat" 1
+assert_log "down-no-repeat" "TELEGRAM" 0
+
+# G: a long scheduler gap skipping a whole bucket still reminds exactly once
+MOCK_PROBE_RC=1 MOCK_HIST="failure 2026-08-15T20:40:00Z;failure 2026-08-15T20:10:00Z;success 2026-08-15T20:00:00Z" run_case "down-gap" 1
+assert_log "down-gap" "TELEGRAM.*still unreachable" 1
 
 # F: no history, probe ok -> silent, rc=0
 MOCK_PROBE_RC=0 MOCK_HIST="" run_case "fresh-up" 0

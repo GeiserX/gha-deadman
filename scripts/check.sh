@@ -8,7 +8,10 @@ set -euo pipefail
 
 : "${TARGET_URL:?}" "${TELEGRAM_BOT_TOKEN:?}" "${TELEGRAM_CHAT_ID:?}" "${GH_TOKEN:?}" "${GH_REPO:?}"
 WORKFLOW_FILE="${WORKFLOW_FILE:-deadman.yml}"
-REALERT_EVERY_RUNS="${REALERT_EVERY_RUNS:-6}" # 6 runs x 10 min cron = hourly reminders
+# Reminder cadence is measured in elapsed outage time, not in runs: GitHub's
+# scheduler is best-effort (measured median ~31 min for a */10 cron, worst
+# case ~80), so counting runs would make "hourly" mean anything at all.
+REALERT_SECONDS="${REALERT_SECONDS:-3600}"
 PROBE_ATTEMPTS="${PROBE_ATTEMPTS:-2}"
 PROBE_TIMEOUT="${PROBE_TIMEOUT:-20}"
 PROBE_RETRY_DELAY="${PROBE_RETRY_DELAY:-25}"
@@ -45,13 +48,16 @@ iso2epoch() {
 }
 
 main() {
-  local prev="" streak=0 oldest_fail_ts="" counting=1 concl ts mins total
+  local prev="" prev_ts="" oldest_fail_ts="" counting=1 concl ts
+  local down_since mins bucket_now bucket_prev
   while IFS=' ' read -r concl ts; do
     [[ -z "$concl" ]] && continue
-    [[ -z "$prev" ]] && prev="$concl"
+    if [[ -z "$prev" ]]; then
+      prev="$concl"
+      prev_ts="$ts"
+    fi
     if ((counting)); then
       if [[ "$concl" == "failure" ]]; then
-        streak=$((streak + 1))
         oldest_fail_ts="$ts"
       else
         counting=0
@@ -67,12 +73,18 @@ main() {
     fi
     echo "status: up"
   else
-    total=$((streak + 1))
     if [[ "$prev" != "failure" ]]; then
       tg "🔴 deadman: ${TARGET_URL} is UNREACHABLE from GitHub (${PROBE_ATTEMPTS} attempts)"
-    elif ((total % REALERT_EVERY_RUNS == 0)); then
-      mins=$(((NOW - $(iso2epoch "$oldest_fail_ts")) / 60))
-      tg "🔴 deadman: still unreachable, down ~${mins} min"
+    else
+      # Remind once per REALERT_SECONDS of outage: alert when this run crosses
+      # into a later bucket than the previous run occupied.
+      down_since="$(iso2epoch "$oldest_fail_ts")"
+      bucket_now=$(((NOW - down_since) / REALERT_SECONDS))
+      bucket_prev=$((($(iso2epoch "$prev_ts") - down_since) / REALERT_SECONDS))
+      if ((bucket_now > bucket_prev && bucket_now > 0)); then
+        mins=$(((NOW - down_since) / 60))
+        tg "🔴 deadman: still unreachable, down ~${mins} min"
+      fi
     fi
     echo "status: down"
     exit 1

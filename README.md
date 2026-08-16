@@ -68,11 +68,25 @@ Environment knobs in `scripts/check.sh` (override in the workflow if needed):
 | `PROBE_ATTEMPTS` | `2` | Failed attempts required to call it down |
 | `PROBE_RETRY_DELAY` | `25` | Seconds between attempts |
 | `PROBE_TIMEOUT` | `20` | Per-attempt timeout in seconds |
-| `REALERT_EVERY_RUNS` | `6` | Reminder every N red runs (6 × 10 min cron ≈ hourly) |
+| `REALERT_SECONDS` | `3600` | Reminder interval while down, in elapsed outage time |
 | `WORKFLOW_FILE` | `deadman.yml` | Workflow whose run history is read as state |
 
-Note that GitHub cron is best-effort: expect occasional multi-minute delays,
-which is fine for a dead-man's switch with a 20-minute detection floor.
+## How fast will it actually notice?
+
+Slower than the cron suggests, and it is worth being honest about. GitHub's
+scheduler is explicitly best-effort and drops or delays runs under load. On a
+`*/10` cron, 16 consecutive scheduled runs on this repository came out at a
+**median gap of 31 minutes**, with a minimum of 15 and a maximum of 81.
+
+So: expect to hear about an outage within roughly half an hour, occasionally
+up to about an hour and a half. That is fine for "my monitoring host died"
+and useless for "my API had a 90-second blip" — this is a dead-man's switch,
+not an uptime SLA monitor. Tightening the cron does not reliably help; the
+throttling is on GitHub's side.
+
+Because the cadence is unreliable, the reminder interval is measured in
+elapsed outage time (`REALERT_SECONDS`), not in number of runs, so "hourly"
+means hourly no matter how the scheduler behaves.
 
 ## License
 
