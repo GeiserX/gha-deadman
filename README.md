@@ -14,7 +14,7 @@ A dead-man's switch that runs entirely on free GitHub Actions, with no CLI and n
 
 - Probes any URL every 10 minutes from GitHub-hosted runners, free on a public repository.
 - Two attempts 25 s apart before calling it down, so one network blip does not page you.
-- One Telegram message when the URL goes down, one every hour while it stays down, one on recovery with the outage duration.
+- One Telegram message when the URL goes down, a reminder for each hour of outage (sent by the first run after the hour, as GitHub delays scheduled runs), one on recovery with the outage duration.
 - Stateless: the workflow's own run history is the state and doubles as the outage log.
 - No third-party actions; `curl`, `jq` and `gh` only.
 - A weekly keepalive workflow stops GitHub from disabling the schedule after 60 days of inactivity.

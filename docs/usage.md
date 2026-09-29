@@ -7,7 +7,7 @@ Once the secrets are in place, there is nothing to run. Steady state sends nothi
 | When | Telegram message |
 |---|---|
 | The URL goes down | `🔴 deadman: <url> is UNREACHABLE from GitHub (2 attempts)` |
-| Every `REALERT_SECONDS` (one hour) while it stays down | `🔴 deadman: still unreachable, down ~<minutes> min` |
+| Each `REALERT_SECONDS` (one hour) of outage, on the first run after that hour | `🔴 deadman: still unreachable, down ~<minutes> min` |
 | The URL answers again | `🟢 deadman: <url> is reachable again (was down ~<minutes> min)` |
 
 ## The run history is the outage log
