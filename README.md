@@ -6,88 +6,36 @@
 
 [![ci](https://github.com/GeiserX/gha-deadman/actions/workflows/ci.yml/badge.svg)](https://github.com/GeiserX/gha-deadman/actions/workflows/ci.yml)
 [![deadman](https://github.com/GeiserX/gha-deadman/actions/workflows/deadman.yml/badge.svg)](https://github.com/GeiserX/gha-deadman/actions/workflows/deadman.yml)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/GeiserX/gha-deadman)](LICENSE)
 
-A dead-man's switch that runs entirely on free GitHub Actions. It probes a URL
-every 10 minutes from GitHub's infrastructure — outside your network, outside
-your monitoring stack — and messages you on Telegram when the URL stops
-answering, hourly while it stays down, and once when it recovers.
+A dead-man's switch that runs entirely on free GitHub Actions, with no CLI and nothing to install. It probes a URL every 10 minutes from GitHub's infrastructure, outside your network and your monitoring stack, and messages you on Telegram when the URL stops answering, hourly while it stays down, and once when it recovers. Point it at any URL that is only healthy while your monitoring is healthy, and the watcher is watched, with no infrastructure and no cost.
 
-The typical use case: you run a monitoring server (Uptime Kuma, Prometheus,
-whatever) that alerts you when things break. But who alerts you when the
-*monitoring server* breaks? Point gha-deadman at any URL that is only healthy
-while your watcher is healthy — a status page is perfect — and the circle is
-closed, with zero infrastructure and zero cost.
+## Features
 
-## How it works
+- Probes any URL every 10 minutes from GitHub-hosted runners, free on a public repository.
+- Two attempts 25 s apart before calling it down, so one network blip does not page you.
+- One Telegram message when the URL goes down, one every hour while it stays down, one on recovery with the outage duration.
+- Stateless: the workflow's own run history is the state and doubles as the outage log.
+- No third-party actions; `curl`, `jq` and `gh` only.
+- A weekly keepalive workflow stops GitHub from disabling the schedule after 60 days of inactivity.
+- Every threshold is an environment variable in `scripts/check.sh`.
 
-- `.github/workflows/deadman.yml` runs on a `*/10` cron on GitHub-hosted
-  runners (free and unlimited on public repositories).
-- `scripts/check.sh` probes `TARGET_URL` (2 attempts, 25 s apart, so a single
-  network blip doesn't page you) and talks to the Telegram Bot API directly —
-  no third-party actions, no dependencies beyond `curl`, `jq` and `gh`.
-- **Stateless by design**: the workflow's own run history is the state. A
-  failing probe exits non-zero, so the previous run's conclusion says whether
-  the target was already down, the streak of consecutive red runs drives the
-  re-alert cadence, and the oldest red run's timestamp gives the outage
-  duration. Nothing is stored anywhere, and the run history doubles as an
-  outage log. (This also sidesteps a real limitation: the workflow
-  `GITHUB_TOKEN` cannot write repository Actions variables.)
-- Alert policy: one message on the up→down transition, a reminder every hour
-  while down, one message on recovery with the outage duration. Steady state
-  sends nothing.
-- A separate weekly `keepalive.yml` re-enables both workflows via the GitHub
-  API so the schedules survive GitHub's 60-day inactivity auto-disable —
-  separate on purpose, so its green runs never pollute the probe's history.
-
-## Setup
+## Quick start
 
 1. Fork or copy this repository (public, so the Actions minutes are free).
-2. Create a Telegram bot with [@BotFather](https://t.me/BotFather), and get
-   your chat id (send the bot a message, then check
-   `https://api.telegram.org/bot<TOKEN>/getUpdates`).
-3. Add three repository secrets (Settings → Secrets and variables → Actions):
+2. Create a Telegram bot with [@BotFather](https://t.me/BotFather) and get your chat id.
+3. Add the repository secrets `TARGET_URL`, `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (Settings > Secrets and variables > Actions).
+4. Run the `deadman` workflow once by hand, and once with `TARGET_URL` pointed at something dead, to see both paths.
 
-   | Secret | Value |
-   |---|---|
-   | `TARGET_URL` | The URL to probe. Any HTTP 2xx/3xx counts as alive; pick a dynamic, uncacheable endpoint so a CDN can't answer for a dead origin. |
-   | `TELEGRAM_BOT_TOKEN` | The bot token from BotFather. |
-   | `TELEGRAM_CHAT_ID` | Your numeric chat id. |
+The details of each step are in [Getting started](docs/getting-started.md).
 
-4. Run the `deadman` workflow once by hand (Actions → deadman → Run workflow)
-   to confirm the happy path, and once with `TARGET_URL` pointed at something
-   dead to confirm the alert actually fires. An alert you have never seen fire
-   is not an alert.
+## Documentation
 
-## Tuning
-
-Environment knobs in `scripts/check.sh` (override in the workflow if needed):
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `PROBE_ATTEMPTS` | `2` | Failed attempts required to call it down |
-| `PROBE_RETRY_DELAY` | `25` | Seconds between attempts |
-| `PROBE_TIMEOUT` | `20` | Per-attempt timeout in seconds |
-| `REALERT_SECONDS` | `3600` | Reminder interval while down, in elapsed outage time |
-| `WORKFLOW_FILE` | `deadman.yml` | Workflow whose run history is read as state |
-
-## How fast will it actually notice?
-
-Slower than the cron suggests, and it is worth being honest about. GitHub's
-scheduler is explicitly best-effort and drops or delays runs under load. On a
-`*/10` cron, 16 consecutive scheduled runs on this repository came out at a
-**median gap of 31 minutes**, with a minimum of 15 and a maximum of 81.
-
-So: expect to hear about an outage within roughly half an hour, occasionally
-up to about an hour and a half. That is fine for "my monitoring host died"
-and useless for "my API had a 90-second blip" — this is a dead-man's switch,
-not an uptime SLA monitor. Tightening the cron does not reliably help; the
-throttling is on GitHub's side.
-
-Because the cadence is unreliable, the reminder interval is measured in
-elapsed outage time (`REALERT_SECONDS`), not in number of runs, so "hourly"
-means hourly no matter how the scheduler behaves.
+- [Getting started](docs/getting-started.md): the bot, the secrets, and the test that proves the alert fires
+- [Configuration](docs/configuration.md): the probe and re-alert thresholds
+- [Usage](docs/usage.md): the three Telegram messages and the run history as an outage log
+- [How it works](docs/how-it-works.md): the stateless design, the keepalive workflow, and how fast it really notices
 
 ## License
 
-GPL-3.0 — see [LICENSE](LICENSE).
+[GPL-3.0-or-later](LICENSE)
