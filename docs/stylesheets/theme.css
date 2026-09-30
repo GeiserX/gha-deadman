@@ -1,0 +1,165 @@
+/* docs/stylesheets/theme.css: the site takes its colours from the banner.
+ *
+ * banner.svg is navy (#14212d) with the wordmark in cream (#fbf4e4), the
+ * tagline and the clock's bells in gold (#e6b84a) and the clock's ring in red
+ * (#c7372f). The header and the dark page are the navy, the text on the header
+ * is the cream (14.9:1), and links are the gold: as is on the dark page
+ * (8.8:1 on #14212d), darkened to #8f6b14 on white (4.9:1). mkdocs.yml sets
+ * `primary: custom` and `accent: custom`, so Material paints nothing until
+ * these variables exist.
+ */
+:root {
+  --md-primary-fg-color: #14212d; /* banner background */
+  --md-primary-fg-color--light: #1d2e3d;
+  --md-primary-fg-color--dark: #0c151d;
+  --md-primary-bg-color: #fbf4e4; /* banner wordmark: text on the header */
+  --md-primary-bg-color--light: #c9c1b0;
+
+  --md-accent-fg-color: #e6b84a; /* banner tagline gold */
+  --md-accent-fg-color--transparent: #e6b84a1a;
+}
+
+/* Dark scheme: the page body uses the banner background too, so the header
+   and the page read as one surface. */
+[data-md-color-scheme="slate"] {
+  --md-default-bg-color: #14212d;
+  --md-code-bg-color: #1d2e3d;
+  --md-typeset-a-color: #e6b84a;
+}
+
+/* Light scheme: #e6b84a on white is 1.9:1, too faint for body links.
+   #8f6b14 is the same hue at 4.9:1. */
+[data-md-color-scheme="default"] {
+  --md-typeset-a-color: #8f6b14;
+}
+
+/* Fixed logo size so it does not crowd the site name. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+/* The site name, set the way banner.svg sets the wordmark: heavy and tight.
+ *
+ * Only the first topic is styled. Material puts the site name in one
+ * .md-header__topic and the page title in a second one, and swaps them on
+ * scroll. Styling both would change every page title too. */
+.md-header__topic:first-child .md-ellipsis {
+  color: #fbf4e4;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* Keep the mark and the name close, so they read as one unit. */
+.md-header__button.md-logo {
+  padding-right: 0.2rem;
+}
+
+.md-header__title {
+  margin-left: 0.2rem;
+}
+
+/* Buttons.
+ *
+ * Material paints .md-button in --md-primary-fg-color, the header colour. On
+ * the dark page that is also the page background, so a button would show as
+ * plain text. Outline buttons take the link colour instead. */
+.md-typeset .md-button {
+  color: var(--md-typeset-a-color);
+  border-color: var(--md-typeset-a-color);
+  border-radius: 0.5rem;
+}
+
+/* A hovered button fills with the link colour, so its text flips to the
+   colour that reads on it: navy on the gold (8.8:1), white on the dark gold
+   of the light scheme (4.9:1). */
+.md-typeset .md-button:focus,
+.md-typeset .md-button:hover {
+  background-color: var(--md-typeset-a-color);
+  border-color: var(--md-typeset-a-color);
+  color: #ffffff;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button:focus,
+[data-md-color-scheme="slate"] .md-typeset .md-button:hover {
+  color: #14212d;
+}
+
+.md-typeset .md-button--primary,
+.md-typeset .md-button--primary:focus,
+.md-typeset .md-button--primary:hover {
+  /* White on #8f6b14 is 4.9:1 and on #7d5e11 6.0:1. */
+  background: linear-gradient(90deg, #8f6b14 0%, #7d5e11 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.md-typeset .md-button--primary:focus,
+.md-typeset .md-button--primary:hover {
+  box-shadow: 0 0.2rem 0.8rem #e6b84a59;
+}
+
+/* Grid cards: the border picks up the accent on hover, so the cards match
+   the buttons and links. */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-radius: 0.5rem;
+}
+
+.md-typeset .grid.cards > ul > li:focus-within,
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:focus-within,
+.md-typeset .grid > .card:hover {
+  border-color: #e6b84a;
+}
+
+/* The home page keeps an H1 for search, screen readers and the browser tab.
+   The banner under it already shows the name, so the H1 is hidden visually.
+   Use it as: # gha-deadman { .gd-visually-hidden } */
+.md-typeset h1.gd-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Variable and secret names in tables, such as TELEGRAM_BOT_TOKEN, must not
+   wrap mid-word. Material sets word-break: break-word on code; normal keeps a
+   name whole but still lets a long message wrap at its spaces. */
+.md-typeset table:not([class]) code {
+  word-break: normal;
+}
+
+/* The phone screenshots on the home page, once they exist: four in a row on
+   a wide screen, two on a narrow one, each with a short caption. */
+.md-typeset .gd-phone-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin: 1em 0;
+}
+
+.md-typeset .gd-phone-gallery figure {
+  margin: 0;
+}
+
+.md-typeset .gd-phone-gallery img {
+  border-radius: 0.4rem;
+}
+
+.md-typeset .gd-phone-gallery figcaption {
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .gd-phone-gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
