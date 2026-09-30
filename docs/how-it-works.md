@@ -25,17 +25,26 @@ You run a monitoring server (Uptime Kuma, Prometheus, whatever) that alerts you 
 
 ## How fast it notices
 
-Slower than the cron suggests. GitHub's scheduler is explicitly best-effort and
-drops or delays runs under load. On a `*/10` cron, 16 consecutive scheduled runs
-on this repository came out at a **median gap of 31 minutes**, with a minimum of
-15 and a maximum of 81.
+Much slower than the cron suggests. GitHub's scheduler is explicitly
+best-effort: it delays and drops scheduled runs, and nothing in the workflow can
+make it keep a `*/10` pace. The scheduled runs of this repository:
 
-So expect to hear about an outage within roughly half an hour, occasionally up
-to about an hour and a half. That is fine for "my monitoring host died" and
+| Period | Scheduled runs | Median gap | 90% of gaps under | Longest gap |
+|---|---|---|---|---|
+| 15 to 25 August 2026 | 437 | 30 min | 51 min | 1 h 50 min |
+| 29 August to 30 September 2026 | 216 | 3 h 32 min | 5 h 25 min | 8 h 20 min |
+
+So expect to hear about an outage within a few hours, and in the worst gap
+measured, more than eight. That is fine for "my monitoring host died" and
 useless for "my API had a 90-second blip": this is a dead-man's switch, not an
-uptime SLA monitor. Tightening the cron does not reliably help; the throttling
-is on GitHub's side.
+uptime SLA monitor. Tightening the cron does not help; the throttling is on
+GitHub's side.
 
 Because the cadence is unreliable, the reminder interval is measured in elapsed
-outage time (`REALERT_SECONDS`), not in number of runs, so "hourly" means hourly
-no matter how the scheduler behaves.
+outage time (`REALERT_SECONDS`), not in number of runs. There is at most one
+reminder per `REALERT_SECONDS` of outage (one per outage hour by default), sent
+by the first run in each new hour. Two reminders can still arrive minutes
+apart: a run at minute 119 of an outage sends the first-hour reminder, and a
+run at minute 121 sends the second-hour one. When runs are more than an hour
+apart, as they have been since late August, every run during an outage sends
+one.
