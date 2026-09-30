@@ -41,7 +41,10 @@ uptime SLA monitor. Tightening the cron does not help; the throttling is on
 GitHub's side.
 
 Because the cadence is unreliable, the reminder interval is measured in elapsed
-outage time (`REALERT_SECONDS`), not in number of runs, so a reminder never
-comes more than once an hour however often GitHub runs the workflow. When runs
-are more than an hour apart, as they have been since late August, every run
-during an outage sends one.
+outage time (`REALERT_SECONDS`), not in number of runs. There is at most one
+reminder per `REALERT_SECONDS` of outage (one per outage hour by default), sent
+by the first run in each new hour. Two reminders can still arrive minutes
+apart: a run at minute 119 of an outage sends the first-hour reminder, and a
+run at minute 121 sends the second-hour one. When runs are more than an hour
+apart, as they have been since late August, every run during an outage sends
+one.
