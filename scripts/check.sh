@@ -9,8 +9,9 @@ set -euo pipefail
 : "${TARGET_URL:?}" "${TELEGRAM_BOT_TOKEN:?}" "${TELEGRAM_CHAT_ID:?}" "${GH_TOKEN:?}" "${GH_REPO:?}"
 WORKFLOW_FILE="${WORKFLOW_FILE:-deadman.yml}"
 # Reminder cadence is measured in elapsed outage time, not in runs: GitHub's
-# scheduler is best-effort (measured median ~31 min for a */10 cron, worst
-# case ~80), so counting runs would make "hourly" mean anything at all.
+# scheduler is best-effort (measured median 30 min for a */10 cron in mid-August
+# 2026, 3.5 h since late August, worst case 8 h 20 min), so counting runs would
+# make "hourly" mean anything at all.
 REALERT_SECONDS="${REALERT_SECONDS:-3600}"
 PROBE_ATTEMPTS="${PROBE_ATTEMPTS:-2}"
 PROBE_TIMEOUT="${PROBE_TIMEOUT:-20}"
