@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "gha_deadman",
+  "project_id": "a85709cc-334f-4d36-96bf-2138b704eda5"
+}
