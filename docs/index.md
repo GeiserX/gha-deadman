@@ -82,7 +82,7 @@ The workflow asks for a run every 10 minutes; GitHub decides when it actually ru
 
 - The URL, the bot token and the chat id are repository secrets. They are never committed, and GitHub masks each of them in the run logs.
 - The run history of a public repository is public. Anyone can see when your target was down: a streak of red `deadman` runs.
-- When the target cannot be reached at all (no DNS answer, connection refused), `curl`'s error line in the run log names the host. GitHub masks the whole URL, not the host inside it. A failure with an HTTP status, such as a 522 from a CDN, prints only the status code.
+- A failed probe never prints the URL or its host. GitHub masks the whole URL but not the host inside it, and `curl`'s own error line names the host, so the script drops that line and prints only the `curl` exit code and the HTTP status.
 
 ## Getting help
 

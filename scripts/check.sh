@@ -20,12 +20,19 @@ CURL="${CURL:-curl}"
 GH="${GH:-gh}"
 NOW="${NOW_OVERRIDE:-$(date +%s)}"
 
+# curl's own error line names the host ("Could not resolve host: ..."), and
+# GitHub masks the whole TARGET_URL secret, not the host inside it. So the
+# probe never lets curl write to the log: stderr is dropped and a fixed line
+# with only the curl exit code and the HTTP status is printed instead.
 probe() {
-  local i
+  local i rc code
   for ((i = 1; i <= PROBE_ATTEMPTS; i++)); do
-    if "$CURL" -fsS -m "$PROBE_TIMEOUT" -o /dev/null "$TARGET_URL"; then
+    rc=0
+    code="$("$CURL" -fsS -m "$PROBE_TIMEOUT" -o /dev/null -w '%{http_code}' "$TARGET_URL" 2>/dev/null)" || rc=$?
+    if ((rc == 0)); then
       return 0
     fi
+    echo "probe: attempt ${i}/${PROBE_ATTEMPTS} failed (curl exit ${rc}, HTTP ${code:-000})"
     ((i < PROBE_ATTEMPTS)) && sleep "$PROBE_RETRY_DELAY"
   done
   return 1
