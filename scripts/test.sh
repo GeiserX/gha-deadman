@@ -16,7 +16,13 @@ if [[ "$args" == *api.telegram.org* ]]; then
   exit 0
 fi
 echo "PROBE" >>"$MOCK_LOG"
-exit "${MOCK_PROBE_RC:-0}"
+rc="${MOCK_PROBE_RC:-0}"
+if [[ "$rc" != 0 ]]; then
+  # Like the real curl, name the target's host on stderr when it fails.
+  url="${*: -1}"; host="${url#*://}"; host="${host%%/*}"
+  echo "curl: (6) Could not resolve host: ${host}" >&2
+fi
+exit "$rc"
 EOF
 
 cat >"$TMP/gh" <<'EOF'
@@ -31,7 +37,7 @@ run_case() { # name, expected_rc
   local name="$1" expected_rc="$2" rc=0
   : >"$LOG"
   MOCK_LOG="$LOG" CURL="$TMP/curl" GH="$TMP/gh" \
-    TARGET_URL="https://example.com/x" TELEGRAM_BOT_TOKEN=t TELEGRAM_CHAT_ID=c \
+    TARGET_URL="${MOCK_TARGET:-https://example.com/x}" TELEGRAM_BOT_TOKEN=t TELEGRAM_CHAT_ID=c \
     GH_TOKEN=g GH_REPO=o/r PROBE_RETRY_DELAY=0 NOW_OVERRIDE=1786831200 \
     bash scripts/check.sh >"$TMP/out" 2>&1 || rc=$?
   if [[ "$rc" != "$expected_rc" ]]; then
@@ -84,6 +90,24 @@ assert_log "down-gap" "TELEGRAM.*still unreachable" 1
 # F: no history, probe ok -> silent, rc=0
 MOCK_PROBE_RC=0 MOCK_HIST="" run_case "fresh-up" 0
 assert_log "fresh-up" "TELEGRAM" 0
+
+# H: a failed probe must not leak the target's host into the run log. GitHub
+# masks the whole TARGET_URL secret but not the host inside it, and curl's
+# error line names the host (the fake curl prints that line too).
+PLANTED="deadman-planted-secret.example"
+# Control: the fake curl does put the planted host on stderr, so the leak
+# assertion below is able to fail.
+if [[ "$(MOCK_LOG=/dev/null MOCK_PROBE_RC=6 "$TMP/curl" -fsS "https://${PLANTED}/x" 2>&1)" != *"$PLANTED"* ]]; then
+  echo "FAIL [no-leak control]: the fake curl does not print the host"; exit 1
+fi
+MOCK_PROBE_RC=6 MOCK_TARGET="https://${PLANTED}/x" MOCK_HIST="" run_case "no-leak" 1
+assert_log "no-leak" "^PROBE$" 2
+if grep -q "deadman-planted-secret" "$TMP/out"; then
+  echo "FAIL [no-leak]: the run log names the target host"; cat "$TMP/out"; exit 1
+fi
+if ! grep -q "^probe: attempt 2/2 failed (curl exit 6, HTTP 000)$" "$TMP/out"; then
+  echo "FAIL [no-leak]: no fixed failure line in the run log"; cat "$TMP/out"; exit 1
+fi
 
 # Harness positive control: a wrong expectation must fail (run in subshell)
 if (MOCK_PROBE_RC=0 MOCK_HIST="" run_case "control" 1) 2>/dev/null; then

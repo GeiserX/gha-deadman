@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Every answer starts in the same place: Actions > deadman > the run > the `Probe target` step. The script prints `status: up` or `status: down`, `telegram: sent` after each message Telegram accepted, and `curl`'s error line when a request fails.
+Every answer starts in the same place: Actions > deadman > the run > the `Probe target` step. The script prints `status: up` or `status: down`, `telegram: sent` after each message Telegram accepted, and `curl`'s error line when a Telegram request fails. A failed probe prints `probe: attempt 1/2 failed (curl exit 6, HTTP 000)` instead of `curl`'s error line, because that line names the target's host. The common exit codes: 6, the name does not resolve; 7, the connection was refused; 28, it timed out; 22, the server answered with the HTTP status shown.
 
 ## The test alert never arrived
 
@@ -36,7 +36,7 @@ Any HTTP status below 400 counts as up, and redirects are not followed, so a 301
 
 Open an [issue](https://github.com/GeiserX/gha-deadman/issues) with:
 
-- the link to the run, and the `Probe target` log lines around the problem. GitHub masks the secrets, but a `curl` error for an unreachable target names its host, so replace the host with `example.com` before you paste;
+- the link to the run, and the `Probe target` log lines around the problem;
 - the Telegram message you received, if any, and the one you expected;
 - whether your copy is a fork or a copy, and any threshold you changed in [Configuration](configuration.md).
 
