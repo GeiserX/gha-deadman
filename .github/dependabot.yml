@@ -19,7 +19,7 @@ updates:
     schedule:
       interval: "monthly"
     labels:
-      - "docs"
+      - "documentation"
       - "automated"
     commit-message:
       prefix: "build(docs)"
