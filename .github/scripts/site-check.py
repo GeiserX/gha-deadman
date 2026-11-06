@@ -109,6 +109,8 @@ def main(site_dir: str, config_path: str) -> int:
         print(f"ERROR {site_dir}: no index.html (did the build run?)")
         return 1
     m = re.search(r'<link rel="canonical" href="([^"]+)"', index.read_text(errors="replace"))
+    # Directory URLs assumed (every repo's default): with use_directory_urls off or the
+    # offline plugin on, the prefix and page checks below do not apply as written.
     prefix = urlparse(m.group(1)).path if m else "/"
     prefix = prefix if prefix.endswith("/") else prefix + "/"
     errors: set[str] = set()
@@ -189,9 +191,16 @@ def main(site_dir: str, config_path: str) -> int:
             errors.add(f"zensical.toml: theme.variant {variant!r} is not modern or classic (Zensical falls back to classic silently)")
         elif variant == "modern" and "assets/stylesheets/modern/" not in index.read_text(errors="replace"):
             errors.add("index.html does not load the modern stylesheet although theme.variant is modern")
-        directory_urls = cfg.get("use_directory_urls", True)
+        # The offline plugin turns directory URLs off (zensical/config.py,
+        # _apply_offline_plugin), so a redirect stub becomes old.html there.
+        offline = plugins.get("offline", False)
+        offline_on = "offline" in plugins and (offline or {}).get("enabled", True) is not False
+        directory_urls = cfg.get("use_directory_urls", True) and not offline_on
         for src in (plugins.get("redirects") or {}).get("redirect_maps") or {}:
             s = src[:-3] if src.endswith(".md") else src
+            # A README page is its folder's index: sub/README.md -> sub/index.html in every mode.
+            if s == "README" or s.endswith("/README"):
+                s = s[: -len("README")] + "index"
             if not directory_urls:
                 stub = site / (s + ".html")
             elif s == "index" or s.endswith("/index"):
