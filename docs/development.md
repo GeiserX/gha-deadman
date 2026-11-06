@@ -24,13 +24,14 @@ The `ci` workflow runs both commands on every pull request and on every push to 
 
 ## The docs site
 
-The site is built with [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) from `docs/` and `mkdocs.yml`:
+The site is built with [Zensical](https://zensical.org/) from `docs/` and `zensical.toml`:
 
 ```bash
 pip install -r docs/requirements-docs.txt
-mkdocs build --strict
+python -m zensical build --clean --strict
+python -I .github/scripts/site-check.py site
 ```
 
-The `Docs` workflow runs the same strict build on every pull request and deploys `main` to GitHub Pages. A broken link, a missing page or a page left out of the nav fails the build.
+The `Docs` workflow runs the same two steps on every pull request and deploys `main` to GitHub Pages. The strict build fails on a broken link or anchor; `site-check.py` fails on what the build lets through: a page left out of the nav, a nav entry for a missing file, a missing image, a link rooted at `/`.
 
 Commits follow [Conventional Commits](https://www.conventionalcommits.org/). The code is [GPL-3.0-or-later](https://github.com/GeiserX/gha-deadman/blob/main/LICENSE).
